@@ -1,1 +1,2 @@
-# jamesmc.github.io
+# Vanity website
+This is my personal website
