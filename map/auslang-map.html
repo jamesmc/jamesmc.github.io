@@ -20,9 +20,15 @@
 <body>
     <div class="container">
 		<header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
-        <a href="/" class="d-flex align-items-center mb-3 ml-5 mb-md-0 me-md-auto text-dark text-decoration-none">
+        <span class="d-flex align-items-center mb-3 ml-5 mb-md-0 me-md-auto text-dark text-decoration-none">
             <h1>Australian language map</h1>
-        </a>
+		</span>
+		<span class="d-flex align-items-end">
+			<div class="form-check">
+				<input class="form-check-input" type="checkbox" name="show-all-language-names-checkbox" id="show-all-language-names" checked="false" onchange="toggleShowLanguageNames('show-all-language-names')">
+				<label class="form-check-label" for="show-all-language-names-checkbox">Show all language names</label>
+			</div>
+		</span>
     </header>
 
     <div class="container">
@@ -77,22 +83,6 @@
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 		}).addTo(map);
 
-		// control that shows state info on hover
-		const info = L.control();
-
-		info.onAdd = function (map) {
-			this._div = L.DomUtil.create('div', 'info');
-			this.update();
-			return this._div;
-		};
-
-		info.update = function (props) {
-			const contents = props ? `<b>${props.Name}</b><br>${props["AusMap Metadata_Family"]}` : 'Hover over a language';
-			this._div.innerHTML = `${contents}`;
-		};
-
-		info.addTo(map);
-
 		function style(feature) {
 			return {
 				weight: 2,
@@ -106,32 +96,89 @@
 		
 		function updateFeature(layer, style) {
 			layer.setStyle(style);
+		}
+
+		function unselectFeature(layer) {
+			updateFeature(layer, {
+						weight: 2,
+						color: 'white',
+						dashArray: '3',
+					});
 			layer.bringToFront();
-			info.update(layer.feature.properties);
 		}
-							
+		
+		//global variable to hold state of previous selected feature
+		var prevSelectedFeature = null;
 		function selectFeature(layer) {
-			if (info.prevSelectedFeature) updateFeature(info.prevSelectedFeature, {fillOpacity: 0.3});
-			updateFeature(layer, {fillOpacity: 0.7});
+			if (prevSelectedFeature) unselectFeature(prevSelectedFeature);
+			updateFeature(layer, {
+						weight: 5,
+						color: '#666',
+						dashArray: ''
+					});
+			layer.bringToFront();
 
-			//add property to info global object to store state of previously selected layer for resetting
-			info.prevSelectedFeature = layer;
+			prevSelectedFeature = layer;
 		}
 
-		// global languages loaded from external file
+		// global languages object loaded from external file
 		const geojson = L.geoJson(languages, {
 			style,
 			onEachFeature
 		}).addTo(map);
 
 		function zoomToFeature(target) {
-			map.fitBounds(target.getBounds(), {maxZoom: 7});
+			const currentMaxZoom = map.getZoom() < 7 ? 7 : map.getZoom();
+
+			map.fitBounds(target.getBounds(), {maxZoom: currentMaxZoom});
+		}
+
+		function initTooltip(layer, permanent) {
+			if (permanent) {
+					layer.bindTooltip(layer.languageName, {
+						permanent: true, 
+						direction:"center",
+						opacity:0.75,
+					}).openTooltip();
+				} else {
+					layer.bindTooltip(layer.languageName, {
+						permanent: false, 
+						direction:"center",
+						opacity:0.75,
+					});
+				}
+		}
+		
+		function toggleShowLanguageNames() {
+			const isChecked = document.getElementById('show-all-language-names').checked;
+
+			geojson.eachLayer(function(layer) {
+				if(layer.getTooltip())
+					layer.unbindTooltip();
+				initTooltip(layer, isChecked);
+			});
+		}
+
+		function onEachFeature(feature, layer) {
+			layer.languageName = feature.properties.Name;
+			initTooltip(layer, false);
+
+			layer.on({
+				mouseover: function(e) {
+					updateFeature(e.target, {fillOpacity: 0.7});
+				},
+				mouseout: function(e) {
+					updateFeature(e.target, {fillOpacity: 0.3});
+				}, 
+				click: clickLanguage
+			});
 		}
 
 		//controllers for external ui elements
 		function clickCloseDetail(e) {
 			document.getElementById('detail_div').setAttribute('class', 'd-none');
 			document.getElementById('map_div').setAttribute('class', 'col-sm-12');
+			unselectFeature(prevSelectedFeature);
 		}
 
 		function clickLanguage(e) {
@@ -157,26 +204,6 @@
 
 			document.getElementById('detail_iso').innerText = langProps["AusMap Metadata_ISO639"];
 			document.getElementById('detail_description').innerText = langProps["description"];
-		}
-
-		function onEachFeature(feature, layer) {
-			layer.on({
-				mouseover: function(e) {
-					updateFeature(e.target, {
-						weight: 5,
-						color: '#666',
-						dashArray: ''
-					})
-				},
-				mouseout: function(e) {
-					updateFeature(e.target, {
-						weight: 2,
-						color: 'white',
-						dashArray: '3',
-					})
-				}, 
-				click: clickLanguage
-			});
 		}
 
 	</script>
