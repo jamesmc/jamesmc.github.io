@@ -25,7 +25,7 @@
 		</span>
 		<span class="d-flex align-items-end">
 			<div class="form-check">
-				<input class="form-check-input" type="checkbox" name="show-all-language-names-checkbox" id="show-all-language-names" onchange="toggleShowLanguageNames('show-all-language-names')">
+				<input class="form-check-input" type="checkbox" name="show-all-language-names-checkbox" id="show-all-language-names">
 				<label class="form-check-label" for="show-all-language-names-checkbox">Show all language names</label>
 			</div>
 		</span>
@@ -38,7 +38,7 @@
 			</div>
 			<div id="detail_div" class="d-none">
 				<table class="table table-hover">
-					<thead><th colspan="2" class="text-end"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="clickCloseDetail()">x</button></th></thead>
+					<thead><th colspan="2" class="text-end"><button type="button" class="btn btn-outline-secondary btn-sm" id="close-detail-btn">x</button></th></thead>
 					<tbody>
 						<tr><td class="text-center" colspan="2"><h3 id="detail_name"></h3></td></tr>
 						<tr><td><small>Family</small></td><td id="detail_family"></td></tr>
@@ -149,15 +149,16 @@
 				}
 		}
 		
-		function toggleShowLanguageNames() {
-			const isChecked = document.getElementById('show-all-language-names').checked;
+		document.getElementById('show-all-language-names').addEventListener('change', 
+			function (e) {
+			const isChecked = e.target.checked;
 
 			geojson.eachLayer(function(layer) {
 				if(layer.getTooltip())
 					layer.unbindTooltip();
 				initTooltip(layer, isChecked);
 			});
-		}
+		});
 
 		function onEachFeature(feature, layer) {
 			layer.languageName = feature.properties.Name;
@@ -175,11 +176,12 @@
 		}
 
 		//controllers for external ui elements
-		function clickCloseDetail(e) {
+		document.getElementById('close-detail-btn').addEventListener('click', 
+		function (e) {
 			document.getElementById('detail_div').setAttribute('class', 'd-none');
 			document.getElementById('map_div').setAttribute('class', 'col-sm-12');
 			unselectFeature(prevSelectedFeature);
-		}
+		});
 
 		function clickLanguage(e) {
 			selectFeature(e.target);
