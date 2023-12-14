@@ -27,6 +27,10 @@
 			<div class="form-check">
 				<input class="form-check-input" type="checkbox" name="show-all-language-names-checkbox" id="show-all-language-names">
 				<label class="form-check-label" for="show-all-language-names-checkbox">Show all language names</label>
+				<br>
+				<div id="search-input-div" class="d-none">
+					<input class="" type="search" value="" id="search-input">
+				</div>
 			</div>
 		</span>
     </header>
@@ -148,17 +152,40 @@
 					});
 				}
 		}
-		
-		document.getElementById('show-all-language-names').addEventListener('change', 
-			function (e) {
-			const isChecked = e.target.checked;
 
+		function resetTooltips(showAllNames, nameSearchString) {
 			geojson.eachLayer(function(layer) {
 				if(layer.getTooltip())
 					layer.unbindTooltip();
-				initTooltip(layer, isChecked);
+
+				if(nameSearchString == '' || layer.languageName.toLowerCase().startsWith(nameSearchString.toLowerCase()))
+					initTooltip(layer, showAllNames);
 			});
-		});
+		}
+
+		document.getElementById('search-input').addEventListener('input',
+			function (e) {
+				const searchString = e.target.value;
+				resetTooltips(true, searchString);
+			});
+		
+		document.getElementById('show-all-language-names').addEventListener('change', 
+			function (e) {
+
+				const isChecked = e.target.checked;
+
+				const searchInputDiv = document.getElementById('search-input-div');
+				const searchInput = document.getElementById('search-input');
+
+				if(isChecked) {
+					searchInputDiv.setAttribute('class', 'd-flex');
+				} else {
+					searchInputDiv.setAttribute('class', 'd-none');
+					searchInput.value = '';				
+				}
+
+				resetTooltips(isChecked, searchInput.value);
+			});
 
 		function onEachFeature(feature, layer) {
 			layer.languageName = feature.properties.Name;
